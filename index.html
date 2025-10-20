@@ -1,0 +1,845 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>.grad - y2k 科技系音乐制作人</title>
+    <style>
+      :root {
+        --sky-top: #5aa8ff;
+        --sky-mid: #7fc0ff;
+        --sky-bot: #cbe4ff;
+        --text: #eaf3ff;
+        --accent: #9dd1ff;
+        --grid: rgba(255, 255, 255, 0.05);
+      }
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: Bahnschrift, "Segoe UI", Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+        background: #6fb4ff;
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .stage {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+      }
+      #sky {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .grid {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 1;
+        background-image:
+          repeating-linear-gradient(
+            to right,
+            var(--grid) 0,
+            var(--grid) 1px,
+            transparent 1px,
+            transparent 16px
+          ),
+          repeating-linear-gradient(
+            to bottom,
+            var(--grid) 0,
+            var(--grid) 1px,
+            transparent 1px,
+            transparent 16px
+          );
+        background-size: 16px 100%, 100% 16px;
+        mix-blend-mode: overlay;
+        opacity: 0.7;
+        animation: gridShift 16s linear infinite;
+      }
+      @keyframes gridShift {
+        0%   { background-position: 0 0, 0 0; }
+        100% { background-position: 16px 16px, 16px 16px; }
+      }
+
+      .clouds {
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .cloud-wrap {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform-origin: center;
+        will-change: transform;
+      }
+      .cloud {
+        margin: 0;
+        white-space: pre;
+        display: inline-block;
+        font-family: "JetBrains Mono", "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, Monaco, monospace;
+        font-variant-ligatures: none;
+        font-size: 14px;
+        line-height: 1;
+        letter-spacing: 0;
+        color: rgba(244, 247, 255, 0.92);
+        text-shadow: 0 0 9px rgba(160, 205, 255, 0.2);
+        mix-blend-mode: screen;
+        filter: saturate(1.12) contrast(1.32) brightness(1.05);
+        max-width: 100vw;
+        max-height: 100vh;
+        transform: translateZ(0);
+      }
+      .cloud .px {
+        display: inline-block;
+        width: 1ch;
+        height: 1em;
+      }
+      .cloud .px.empty {
+        color: transparent !important;
+        text-shadow: none !important;
+      }
+      .hud {
+        position: fixed;
+        inset: 0;
+        z-index: 4;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        font-family: "Segoe UI", Roboto, Ubuntu, sans-serif;
+        color: rgba(220, 245, 255, 0.82);
+        mix-blend-mode: screen;
+      }
+      .hud-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 3vh 4vw;
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        font-size: clamp(9px, 1.2vw, 13px);
+      }
+      .hud-corner {
+        position: relative;
+        padding-left: 1.6em;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25em;
+      }
+      .hud-corner::before,
+      .hud-corner::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        width: 0.9em;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(70, 180, 255, 0.45), rgba(0, 0, 0, 0));
+      }
+      .hud-corner::before {
+        top: 0.35em;
+      }
+      .hud-corner::after {
+        top: 1em;
+      }
+      .hud-label {
+        font-size: 0.78em;
+        opacity: 0.55;
+        letter-spacing: 0.32em;
+      }
+      .hud-value {
+        font-weight: 600;
+        letter-spacing: 0.42em;
+      }
+      .hud-clock {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.4em;
+      }
+      .hud-clock::after {
+        content: "";
+        width: 4.6em;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(120, 220, 255, 0.6));
+      }
+      .hud-row-bottom {
+        align-items: flex-end;
+      }
+      .hud-meter {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55em;
+        max-width: 20rem;
+      }
+      .hud-meter-label {
+        font-size: 0.72em;
+        opacity: 0.5;
+        letter-spacing: 0.36em;
+      }
+      .hud-meter-track {
+        position: relative;
+        height: 4px;
+        background: rgba(120, 180, 255, 0.18);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .hud-meter-fill {
+        position: absolute;
+        inset: 0;
+        width: 70%;
+        background: linear-gradient(90deg, rgba(60, 190, 255, 0.35), rgba(210, 245, 255, 0.85));
+      }
+      .hud-dots {
+        display: grid;
+        grid-auto-flow: column;
+        gap: 0.65em;
+      }
+      .hud-dots span {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(150, 225, 255, 0.5);
+        box-shadow: 0 0 6px rgba(100, 200, 255, 0.4);
+      }
+
+      .main {
+        position: relative;
+        z-index: 3;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 6vh 6vw;
+      }
+      .brand {
+        font-weight: 700;
+        letter-spacing: 0.35em;
+        color: #def0ff;
+        text-shadow:
+          0 0 8px rgba(120, 200, 255, 0.35),
+          0 0 22px rgba(40, 120, 255, 0.22);
+        filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.18));
+        user-select: none;
+      }
+      .brand .dot { color: var(--accent); }
+      .brand .grad { opacity: 0.95; }
+      .brand {
+        font-size: clamp(18px, 7vw, 42px);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .grid { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <canvas id="sky" aria-hidden="true"></canvas>
+    </div>
+    <div class="grid" aria-hidden="true"></div>
+    <div class="clouds" id="clouds" aria-hidden="true"></div>
+    <div class="hud" aria-hidden="true">
+      <div class="hud-row">
+        <div class="hud-corner">
+          <span class="hud-label">.grad // system</span>
+          <span class="hud-value">y2k-live</span>
+        </div>
+        <div class="hud-clock">
+          <span class="hud-label">signal</span>
+          <span class="hud-value">∞.221hz</span>
+        </div>
+      </div>
+      <div class="hud-row hud-row-bottom">
+        <div class="hud-meter">
+          <span class="hud-meter-label">vector gain</span>
+          <div class="hud-meter-track"><span class="hud-meter-fill"></span></div>
+        </div>
+        <div class="hud-dots">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <main class="main">
+      <h1 class="brand" aria-label=".grad">
+        <span class="dot">.</span><span class="grad">grad</span>
+      </h1>
+    </main>
+
+    <script>
+      (function () {
+        const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        const canvas = document.getElementById('sky');
+        const ctx = canvas.getContext('2d');
+
+        function draw() {
+          const styles = getComputedStyle(document.documentElement);
+          const w = Math.floor(window.innerWidth * dpr);
+          const h = Math.floor(window.innerHeight * dpr);
+          canvas.width = w;
+          canvas.height = h;
+          canvas.style.width = window.innerWidth + 'px';
+          canvas.style.height = window.innerHeight + 'px';
+
+          const gradient = ctx.createLinearGradient(0, 0, 0, h);
+          gradient.addColorStop(0, styles.getPropertyValue('--sky-top').trim());
+          gradient.addColorStop(0.55, styles.getPropertyValue('--sky-mid').trim());
+          gradient.addColorStop(1, styles.getPropertyValue('--sky-bot').trim());
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, w, h);
+        }
+
+        draw();
+        window.addEventListener('resize', draw);
+        window.addEventListener('orientationchange', draw);
+      })();
+    </script>
+    <script src="cloud-data.js"></script>
+    <script>
+      (function () {
+        const root = document.getElementById('clouds');
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const asciiRamp = " .:-=+*#%@";
+
+        function base64ToArrayBuffer(base64) {
+          const clean = base64.replace(/\s+/g, '');
+          const binary = atob(clean);
+          const len = binary.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          return bytes.buffer;
+        }
+
+        function averageBlock(buffer, width, height, startX, startY, sampleSize) {
+          let total = 0;
+          let count = 0;
+          let r = 0, g = 0, b = 0, a = 0;
+          const maxX = Math.min(startX + sampleSize, width);
+          const maxY = Math.min(startY + sampleSize, height);
+          for (let y = startY; y < maxY; y++) {
+            for (let x = startX; x < maxX; x++) {
+              const idx = (y * width + x) * 4;
+              const alpha = buffer[idx + 3] / 255;
+              if (alpha < 0.01) continue;
+              const red = buffer[idx];
+              const green = buffer[idx + 1];
+              const blue = buffer[idx + 2];
+              const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+              total += luminance * alpha;
+              r += red * alpha;
+              g += green * alpha;
+              b += blue * alpha;
+              a += alpha;
+              count += alpha;
+            }
+          }
+          if (count === 0) {
+            return { empty: true };
+          }
+          const normalized = Math.max(0, Math.min(1, total / (count * 255)));
+          const cutoff = 0.45;
+          const brightness = (normalized - cutoff) / (1 - cutoff);
+          if (brightness <= 0) {
+            return { empty: true };
+          }
+          const rampValue = Math.pow(Math.min(1, brightness), 0.85);
+          const rampIndex = Math.min(asciiRamp.length - 1, Math.floor(rampValue * asciiRamp.length));
+          const char = asciiRamp[rampIndex];
+          const factor = 1 / count;
+          const baseR = Math.round(r * factor);
+          const baseG = Math.round(g * factor);
+          const baseB = Math.round(b * factor);
+          const mix = 0.35 + rampValue * 0.65;
+          const tint = (channel) => Math.round(channel * mix + 255 * (1 - mix));
+          const color = `rgb(${tint(baseR)}, ${tint(baseG)}, ${tint(baseB)})`;
+          return { empty: false, char, color };
+        }
+
+        function createAsciiFrames(decodedFrames, fullWidth, fullHeight, backgroundColor) {
+          const targetCells = 60000;
+          const rawSample = Math.sqrt((fullWidth * fullHeight) / targetCells);
+          const sampleSize = Math.max(1, Math.min(4, Math.round(rawSample) || 1));
+          const cols = Math.ceil(fullWidth / sampleSize);
+          const rows = Math.ceil(fullHeight / sampleSize);
+          const background = new Uint8ClampedArray(fullWidth * fullHeight * 4);
+          const current = new Uint8ClampedArray(fullWidth * fullHeight * 4);
+          const scratch = new Uint8ClampedArray(fullWidth * fullHeight * 4);
+          const frames = [];
+          if (backgroundColor && backgroundColor.length === 4) {
+            for (let i = 0; i < fullWidth * fullHeight; i++) {
+              const offset = i * 4;
+              background[offset] = backgroundColor[0];
+              background[offset + 1] = backgroundColor[1];
+              background[offset + 2] = backgroundColor[2];
+              background[offset + 3] = backgroundColor[3];
+            }
+            current.set(background);
+          }
+
+          decodedFrames.forEach((frame, index) => {
+            scratch.set(current);
+            const { width, height, top, left } = frame.dims;
+            const patch = frame.patch;
+
+            for (let y = 0; y < height; y++) {
+              for (let x = 0; x < width; x++) {
+                const srcIdx = (y * width + x) * 4;
+                const destIdx = ((y + top) * fullWidth + (x + left)) * 4;
+                scratch[destIdx] = patch[srcIdx];
+                scratch[destIdx + 1] = patch[srcIdx + 1];
+                scratch[destIdx + 2] = patch[srcIdx + 2];
+                scratch[destIdx + 3] = patch[srcIdx + 3];
+              }
+            }
+
+            const lines = [];
+            for (let row = 0; row < rows; row++) {
+              const lineParts = [];
+              const y = row * sampleSize;
+              for (let col = 0; col < cols; col++) {
+                const x = col * sampleSize;
+                const cell = averageBlock(scratch, fullWidth, fullHeight, x, y, sampleSize);
+                if (cell.empty) {
+                  lineParts.push('<span class="px empty"></span>');
+                } else {
+                  const safeChar = cell.char === ' ' ? '&nbsp;' : cell.char;
+                  lineParts.push(`<span class="px" style="color:${cell.color}">${safeChar}</span>`);
+                }
+              }
+              lines.push(lineParts.join(''));
+            }
+
+            frames.push({
+              html: lines.join('\n'),
+              delay: Math.max(40, (frame.delay || 10) * 10),
+              data: scratch.slice(0),
+              disposalType: frame.disposalType || 0,
+              dims: frame.dims,
+            });
+
+            current.set(scratch);
+
+            if (frame.disposalType === 2) {
+              const { width: fw, height: fh, top: ft, left: fl } = frame.dims;
+              for (let y = 0; y < fh; y++) {
+                for (let x = 0; x < fw; x++) {
+                  const idx = ((y + ft) * fullWidth + (x + fl)) * 4;
+                  current[idx] = background[idx];
+                  current[idx + 1] = background[idx + 1];
+                  current[idx + 2] = background[idx + 2];
+                  current[idx + 3] = background[idx + 3];
+                }
+              }
+            } else if (frame.disposalType === 3 && frames[index - 1]) {
+              current.set(frames[index - 1].data);
+            }
+          });
+
+          frames.forEach((frame) => {
+            delete frame.data;
+          });
+
+          return { frames, sampleSize, cols, rows };
+        }
+
+        const base64Source = window.__CLOUD_GIF_BASE64__;
+        if (!base64Source) {
+          console.error('Missing cloud GIF base64 data.');
+          return;
+        }
+
+        function parseGIF(arrayBuffer) {
+          const bytes = new Uint8Array(arrayBuffer);
+          const stream = {
+            data: bytes,
+            pos: 0,
+            readByte() { return this.data[this.pos++]; },
+            readBytes(count) {
+              const slice = this.data.subarray(this.pos, this.pos + count);
+              this.pos += count;
+              return slice;
+            },
+            readUnsigned() {
+              const value = this.data[this.pos] | (this.data[this.pos + 1] << 8);
+              this.pos += 2;
+              return value;
+            },
+            readString(length) {
+              let out = '';
+              for (let i = 0; i < length; i++) {
+                out += String.fromCharCode(this.readByte());
+              }
+              return out;
+            },
+          };
+
+          function readColorTable(size) {
+            const table = new Array(size);
+            for (let i = 0; i < size; i++) {
+              const r = stream.readByte();
+              const g = stream.readByte();
+              const b = stream.readByte();
+              table[i] = [r, g, b, 255];
+            }
+            return table;
+          }
+
+          function skipSubBlocks() {
+            let size = stream.readByte();
+            while (size !== 0) {
+              stream.pos += size;
+              size = stream.readByte();
+            }
+          }
+
+          function readSubBlocks() {
+            const chunks = [];
+            let length = 0;
+            let size = stream.readByte();
+            while (size !== 0) {
+              const chunk = stream.readBytes(size);
+              chunks.push(chunk);
+              length += chunk.length;
+              size = stream.readByte();
+            }
+            const data = new Uint8Array(length);
+            let offset = 0;
+            chunks.forEach((chunk) => {
+              data.set(chunk, offset);
+              offset += chunk.length;
+            });
+            return data;
+          }
+
+          function lzwDecode(minCodeSize, data, pixelCount) {
+            let pos = 0;
+            const clearCode = 1 << minCodeSize;
+            const eoiCode = clearCode + 1;
+            let codeSize = minCodeSize + 1;
+            let dictionary = [];
+            let dictLength = 0;
+            const output = new Array(pixelCount);
+
+            function resetDictionary() {
+              dictionary = new Array(4096);
+              const size = 1 << minCodeSize;
+              for (let i = 0; i < size; i++) {
+                dictionary[i] = [i];
+              }
+              dictionary[clearCode] = [];
+              dictionary[eoiCode] = null;
+              dictLength = eoiCode + 1;
+            }
+
+            resetDictionary();
+
+            let dataVal = 0;
+            let dataBits = 0;
+
+            function readCode() {
+              while (dataBits < codeSize) {
+                if (pos >= data.length) return null;
+                dataVal |= data[pos++] << dataBits;
+                dataBits += 8;
+              }
+              const code = dataVal & ((1 << codeSize) - 1);
+              dataVal >>= codeSize;
+              dataBits -= codeSize;
+              return code;
+            }
+
+            let code;
+            let prev = null;
+            let outPos = 0;
+
+            while ((code = readCode()) !== null) {
+              if (code === clearCode) {
+                resetDictionary();
+                codeSize = minCodeSize + 1;
+                prev = null;
+                continue;
+              }
+              if (code === eoiCode) break;
+
+              let entry;
+              if (dictionary[code]) {
+                entry = dictionary[code].slice();
+              } else if (code === dictLength && prev) {
+                entry = prev.concat(prev[0]);
+              } else {
+                break;
+              }
+
+              for (let i = 0; i < entry.length && outPos < pixelCount; i++) {
+                output[outPos++] = entry[i];
+              }
+
+              if (prev && dictLength < 4096) {
+                dictionary[dictLength++] = prev.concat(entry[0]);
+              }
+              prev = entry;
+
+              if (dictLength === (1 << codeSize) && codeSize < 12) {
+                codeSize++;
+              }
+            }
+
+            return output.slice(0, outPos);
+          }
+
+          function deinterlace(pixels, width) {
+            const height = Math.floor(pixels.length / width);
+            const newPixels = new Array(pixels.length);
+            const passes = [
+              { start: 0, step: 8 },
+              { start: 4, step: 8 },
+              { start: 2, step: 4 },
+              { start: 1, step: 2 },
+            ];
+            let pos = 0;
+            passes.forEach((pass) => {
+              for (let y = pass.start; y < height; y += pass.step) {
+                const offset = y * width;
+                for (let x = 0; x < width; x++) {
+                  if (pos < pixels.length) {
+                    newPixels[offset + x] = pixels[pos++];
+                  }
+                }
+              }
+            });
+            return newPixels;
+          }
+
+          const header = stream.readString(6);
+          if (header !== 'GIF87a' && header !== 'GIF89a') {
+            throw new Error('Invalid GIF signature');
+          }
+
+          const width = stream.readUnsigned();
+          const height = stream.readUnsigned();
+          const packed = stream.readByte();
+          const gctFlag = (packed & 0x80) !== 0;
+          const gctSize = 1 << ((packed & 0x07) + 1);
+          const backgroundColorIndex = stream.readByte();
+          stream.readByte(); // pixel aspect ratio, unused
+
+          let globalColorTable = null;
+          if (gctFlag) {
+            globalColorTable = readColorTable(gctSize);
+          }
+
+          const frames = [];
+          let gce = { delay: 10, transparencyIndex: null, disposalType: 0 };
+
+          while (stream.pos < stream.data.length) {
+            const blockId = stream.readByte();
+            if (blockId === 0x3B) {
+              break; // trailer
+            } else if (blockId === 0x21) { // extension
+              const label = stream.readByte();
+              if (label === 0xF9) { // graphic control
+                const blockSize = stream.readByte(); // should be 4
+                const gPacked = stream.readByte();
+                const delay = stream.readUnsigned();
+                const transpIndex = stream.readByte();
+                stream.readByte(); // terminator
+                gce = {
+                  disposalType: (gPacked >> 2) & 0x07,
+                  transparencyIndex: (gPacked & 0x01) ? transpIndex : null,
+                  delay: delay === 0 ? 10 : delay,
+                };
+                if (blockSize !== 4) {
+                  stream.pos += blockSize - 4;
+                }
+              } else if (label === 0xFF) { // application extension
+                const blockSize = stream.readByte();
+                stream.pos += blockSize;
+                skipSubBlocks();
+              } else {
+                // comment, plain text, or other extensions
+                skipSubBlocks();
+              }
+            } else if (blockId === 0x2C) { // image descriptor
+              const left = stream.readUnsigned();
+              const top = stream.readUnsigned();
+              const frameWidth = stream.readUnsigned();
+              const frameHeight = stream.readUnsigned();
+              const iPacked = stream.readByte();
+              const lctFlag = (iPacked & 0x80) !== 0;
+              const interlaced = (iPacked & 0x40) !== 0;
+              const lctSize = 1 << ((iPacked & 0x07) + 1);
+
+              let colorTable = globalColorTable;
+              if (lctFlag) {
+                colorTable = readColorTable(lctSize);
+              }
+              const lzwMinCodeSize = stream.readByte();
+              const imageData = readSubBlocks();
+              const pixelCount = frameWidth * frameHeight;
+              let pixelIndices = lzwDecode(lzwMinCodeSize, imageData, pixelCount);
+              if (pixelIndices.length < pixelCount) {
+                const filled = new Array(pixelCount);
+                for (let i = 0; i < pixelCount; i++) {
+                  filled[i] = pixelIndices[i] !== undefined ? pixelIndices[i] : 0;
+                }
+                pixelIndices = filled;
+              }
+              if (interlaced) {
+                pixelIndices = deinterlace(pixelIndices, frameWidth);
+              }
+
+              const patch = new Uint8ClampedArray(pixelCount * 4);
+              const transIndex = gce.transparencyIndex;
+              for (let i = 0; i < pixelCount; i++) {
+                const colorIndex = pixelIndices[i];
+                const offset = i * 4;
+                if (colorIndex === transIndex) {
+                  patch[offset] = 0;
+                  patch[offset + 1] = 0;
+                  patch[offset + 2] = 0;
+                  patch[offset + 3] = 0;
+                } else {
+                  const color = colorTable[colorIndex] || [0, 0, 0, 0];
+                  patch[offset] = color[0];
+                  patch[offset + 1] = color[1];
+                  patch[offset + 2] = color[2];
+                  patch[offset + 3] = color[3];
+                }
+              }
+
+              frames.push({
+                dims: { left, top, width: frameWidth, height: frameHeight },
+                delay: (gce.delay || 10) * 10,
+                disposalType: gce.disposalType || 0,
+                patch,
+              });
+
+              gce = { delay: 10, transparencyIndex: null, disposalType: 0 };
+            } else {
+              break;
+            }
+          }
+
+          const backgroundColor = globalColorTable && globalColorTable[backgroundColorIndex]
+            ? globalColorTable[backgroundColorIndex].slice()
+            : [0, 0, 0, 0];
+
+          return {
+            lsd: { width, height, backgroundColorIndex, backgroundColor },
+            frames,
+          };
+        }
+
+        const arrayBuffer = base64ToArrayBuffer(base64Source);
+        const gif = parseGIF(arrayBuffer);
+        const speedFactor = 0.95;
+        const { frames: asciiFrames, cols, rows } = createAsciiFrames(gif.frames, gif.lsd.width, gif.lsd.height, gif.lsd.backgroundColor);
+        if (!asciiFrames.length) {
+          console.warn('No frames decoded from GIF.');
+          return;
+        }
+
+        const asciiWrapper = document.createElement('div');
+        asciiWrapper.className = 'cloud-wrap';
+        const asciiElement = document.createElement('pre');
+        asciiElement.className = 'cloud';
+        asciiWrapper.appendChild(asciiElement);
+        root.appendChild(asciiWrapper);
+
+        let needsSizing = true;
+        let sizingRaf = null;
+
+        function updateSizing() {
+          const baseFont = 12;
+          asciiElement.style.fontSize = baseFont + 'px';
+          asciiElement.style.lineHeight = '1';
+          asciiElement.style.letterSpacing = '0';
+
+          const rect = asciiElement.getBoundingClientRect();
+          if (!rect.width || !rect.height) {
+            return;
+          }
+
+          const scale = Math.max(
+            window.innerWidth / rect.width,
+            window.innerHeight / rect.height
+          );
+          const targetFont = baseFont * scale;
+          asciiElement.style.fontSize = targetFont + 'px';
+          needsSizing = false;
+        }
+
+        function requestSizing() {
+          needsSizing = true;
+          if (sizingRaf !== null) return;
+          sizingRaf = requestAnimationFrame(() => {
+            sizingRaf = null;
+            if (needsSizing) updateSizing();
+          });
+        }
+
+        let currentIndex = 0;
+        let nextFrameAt = performance.now();
+
+        function showFrame(index) {
+          asciiElement.innerHTML = asciiFrames[index].html;
+          if (needsSizing) updateSizing();
+        }
+
+        function animationLoop(time) {
+          requestAnimationFrame(animationLoop);
+          if (document.hidden) return;
+          if (prefersReduced.matches) {
+            if (currentIndex !== 0) {
+              currentIndex = 0;
+              showFrame(currentIndex);
+            }
+            return;
+          }
+          if (time >= nextFrameAt) {
+            showFrame(currentIndex);
+            const frame = asciiFrames[currentIndex];
+            nextFrameAt = time + frame.delay * speedFactor;
+            currentIndex = (currentIndex + 1) % asciiFrames.length;
+          }
+        }
+
+        showFrame(0);
+        requestSizing();
+        currentIndex = asciiFrames.length > 1 ? 1 : 0;
+        nextFrameAt = performance.now() + asciiFrames[0].delay * speedFactor;
+        window.addEventListener('resize', requestSizing);
+        window.addEventListener('orientationchange', requestSizing);
+        prefersReduced.addEventListener('change', () => {
+          if (prefersReduced.matches) {
+            currentIndex = 0;
+            showFrame(0);
+            requestSizing();
+          } else {
+            nextFrameAt = performance.now();
+            requestSizing();
+          }
+        });
+        requestAnimationFrame(animationLoop);
+
+        try { delete window.__CLOUD_GIF_BASE64__; } catch (err) { /* ignore */ }
+      })();
+    </script>
+  </body>
+</html>
