@@ -196,24 +196,28 @@
         position: relative;
         z-index: 2;
         min-height: 100dvh;
-        display: grid;
-        place-items: center;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
         text-align: center;
-        padding: 6vh 6vw;
+        padding: 1vh 1vw 0;
       }
       .brand {
-        font-weight: 700;
-        letter-spacing: 0.35em;
-        color: #def0ff;
-        text-shadow:
-          0 0 8px rgba(120, 200, 255, 0.35),
-          0 0 22px rgba(40, 120, 255, 0.22);
-        filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.18));
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        color: #f5f7ff;
+        text-shadow: 0 0 12px rgba(15, 45, 85, 0.35);
         user-select: none;
-        font-size: clamp(18px, 7vw, 42px);
+        font-size: clamp(28px, 6vw, 54px);
+        font-family: "VT323", "Fira Code", "IBM Plex Mono", "Lucida Console", "Consolas", monospace;
+        background: none;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+        text-transform: none;
       }
-      .brand .dot { color: var(--accent); }
-      .brand .grad { opacity: 0.95; }
+      .brand .dot { color: inherit; }
+      .brand .grad { opacity: 1; }
 
       @media (prefers-reduced-motion: reduce) {
         .grid { animation: none; }
@@ -235,7 +239,7 @@
       <div class="hud-row">
         <div class="hud-corner">
           <span class="hud-label">.grad // system</span>
-          <span class="hud-value">y2k-live</span>
+          <span class="hud-value">live</span>
         </div>
         <div class="hud-clock">
           <span class="hud-label">signal</span>
@@ -690,3 +694,4 @@
     </script>
   </body>
 </html>
+
