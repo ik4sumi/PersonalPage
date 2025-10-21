@@ -13,6 +13,7 @@
         --accent: #9dd1ff;
         --grid: rgba(255, 255, 255, 0.05);
       }
+
       *, *::before, *::after { box-sizing: border-box; }
       html, body { height: 100%; }
       body {
@@ -77,62 +78,26 @@
       }
       .cloud-wrap {
         position: relative;
-        width: clamp(1px, 60vw, 3960px);
-        height: clamp(1px, 70vh, 3540px);
+        width: 100vw;
+        height: 100vh;
         overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
-        transform-origin: center;
       }
-      .cloud {
-        margin: 0;
-        white-space: pre;
-        display: inline-block;
+      .cloud-fallback {
         font-family: "JetBrains Mono", "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, Monaco, monospace;
-        font-variant-ligatures: none;
-        font-size: 14px;
-        line-height: 1;
-        letter-spacing: 0;
-        color: rgba(244, 247, 255, 0.92);
-        text-shadow: 0 0 9px rgba(160, 205, 255, 0.2);
-        mix-blend-mode: screen;
-        filter: saturate(1.12) contrast(2.32) brightness(1.05);
-        max-width: 100vw;
-        max-height: 100vh;
-        transform: translateZ(0);
+        letter-spacing: 0.18em;
+        font-size: clamp(13px, 2.3vw, 18px);
+        text-transform: uppercase;
+        color: rgba(220, 245, 255, 0.72);
+        text-align: center;
       }
-      .cloud-stage {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .cloud-display {
-        transform-origin: center;
-      }
-      .cloud-probe {
-        position: absolute;
-        left: 0;
-        top: 0;
-        opacity: 0;
-        pointer-events: none;
-      }
-      .cloud .px {
-        display: inline-block;
-        width: 1ch;
-        height: 1em;
-      }
-      .cloud .px.empty {
-        color: transparent !important;
-        text-shadow: none !important;
-      }
+
       .hud {
         position: fixed;
         inset: 0;
-        z-index: 4;
+        z-index: 3;
         pointer-events: none;
         display: flex;
         flex-direction: column;
@@ -166,12 +131,8 @@
         height: 1px;
         background: linear-gradient(90deg, rgba(70, 180, 255, 0.45), rgba(0, 0, 0, 0));
       }
-      .hud-corner::before {
-        top: 0.35em;
-      }
-      .hud-corner::after {
-        top: 1em;
-      }
+      .hud-corner::before { top: 0.35em; }
+      .hud-corner::after  { top: 1em; }
       .hud-label {
         font-size: 0.78em;
         opacity: 0.55;
@@ -193,9 +154,7 @@
         height: 1px;
         background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(120, 220, 255, 0.6));
       }
-      .hud-row-bottom {
-        align-items: flex-end;
-      }
+      .hud-row-bottom { align-items: flex-end; }
       .hud-meter {
         display: flex;
         flex-direction: column;
@@ -235,7 +194,7 @@
 
       .main {
         position: relative;
-        z-index: 3;
+        z-index: 2;
         min-height: 100dvh;
         display: grid;
         place-items: center;
@@ -251,12 +210,10 @@
           0 0 22px rgba(40, 120, 255, 0.22);
         filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.18));
         user-select: none;
+        font-size: clamp(18px, 7vw, 42px);
       }
       .brand .dot { color: var(--accent); }
       .brand .grad { opacity: 0.95; }
-      .brand {
-        font-size: clamp(18px, 7vw, 42px);
-      }
 
       @media (prefers-reduced-motion: reduce) {
         .grid { animation: none; }
@@ -268,7 +225,12 @@
       <canvas id="sky" aria-hidden="true"></canvas>
     </div>
     <div class="grid" aria-hidden="true"></div>
-    <div class="clouds" id="clouds" aria-hidden="true"></div>
+    <div class="clouds" aria-hidden="true">
+      <div class="cloud-wrap" id="ascii-root">
+        <div class="cloud-fallback">Loading ASCII effect…</div>
+      </div>
+      </div>
+    </div>
     <div class="hud" aria-hidden="true">
       <div class="hud-row">
         <div class="hud-corner">
@@ -325,549 +287,406 @@
         window.addEventListener('orientationchange', draw);
       })();
     </script>
-    <script src="cloud-data.js"></script>
-    <script>
-      (function () {
-        const root = document.getElementById('clouds');
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-        const asciiRamp = " .:-=+*#%@";
 
-        function base64ToArrayBuffer(base64) {
-          const clean = base64.replace(/\s+/g, '');
-          const binary = atob(clean);
-          const len = binary.length;
-          const bytes = new Uint8Array(len);
-          for (let i = 0; i < len; i++) {
-            bytes[i] = binary.charCodeAt(i);
+    <script src="cloud-data0.js"></script>
+    <script type="module">
+      import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
+      import { AsciiEffect } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/effects/AsciiEffect.js";
+
+      const wrapper = document.getElementById('ascii-root');
+      const asciiCharacters = '                              .:-=+*#%@$';
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const base64 = window.__CLOUD_GIF_BASE64__;
+
+      if (!base64) {
+        wrapper.innerHTML = '<div class="cloud-fallback">缺少 GIF 数据</div>';
+        throw new Error('Missing GIF base64 data');
+      }
+
+      function base64ToArrayBuffer(str) {
+        const clean = str.replace(/\s+/g, '');
+        const binary = atob(clean);
+        const len = binary.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes.buffer;
+      }
+
+      function parseGIF(arrayBuffer) {
+        const bytes = new Uint8Array(arrayBuffer);
+        const stream = {
+          data: bytes,
+          pos: 0,
+          readByte() { return this.data[this.pos++]; },
+          readBytes(count) { const slice = this.data.subarray(this.pos, this.pos + count); this.pos += count; return slice; },
+          readUnsigned() { const value = this.data[this.pos] | (this.data[this.pos + 1] << 8); this.pos += 2; return value; },
+          readString(length) { let out = ''; for (let i = 0; i < length; i++) out += String.fromCharCode(this.readByte()); return out; }
+        };
+
+        function readColorTable(size) {
+          const table = new Array(size);
+          for (let i = 0; i < size; i++) {
+            const r = stream.readByte();
+            const g = stream.readByte();
+            const b = stream.readByte();
+            table[i] = [r, g, b, 255];
           }
-          return bytes.buffer;
+          return table;
         }
 
-        function averageBlock(buffer, width, height, startX, startY, sampleSize) {
-          let total = 0;
-          let count = 0;
-          let r = 0, g = 0, b = 0, a = 0;
-          const maxX = Math.min(startX + sampleSize, width);
-          const maxY = Math.min(startY + sampleSize, height);
-          for (let y = startY; y < maxY; y++) {
-            for (let x = startX; x < maxX; x++) {
-              const idx = (y * width + x) * 4;
-              const alpha = buffer[idx + 3] / 255;
-              if (alpha < 0.01) continue;
-              const red = buffer[idx];
-              const green = buffer[idx + 1];
-              const blue = buffer[idx + 2];
-              const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-              total += luminance * alpha;
-              r += red * alpha;
-              g += green * alpha;
-              b += blue * alpha;
-              a += alpha;
-              count += alpha;
+        function skipSubBlocks() {
+          let size = stream.readByte();
+          while (size !== 0) { stream.pos += size; size = stream.readByte(); }
+        }
+
+        function readSubBlocks() {
+          const chunks = [];
+          let length = 0;
+          let size = stream.readByte();
+          while (size !== 0) { const chunk = stream.readBytes(size); chunks.push(chunk); length += chunk.length; size = stream.readByte(); }
+          const data = new Uint8Array(length);
+          let offset = 0;
+          for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.length; }
+          return data;
+        }
+
+        function lzwDecode(minCodeSize, data, pixelCount) {
+          let pos = 0;
+          const clearCode = 1 << minCodeSize;
+          const eoiCode = clearCode + 1;
+          let codeSize = minCodeSize + 1;
+          let dictionary = [];
+          let dictLength = 0;
+          const output = new Array(pixelCount);
+
+          function resetDictionary() {
+            dictionary = new Array(4096);
+            const size = 1 << minCodeSize;
+            for (let i = 0; i < size; i++) dictionary[i] = [i];
+            dictionary[clearCode] = [];
+            dictionary[eoiCode] = null;
+            dictLength = eoiCode + 1;
+          }
+
+          resetDictionary();
+
+          let dataVal = 0;
+          let dataBits = 0;
+
+          function readCode() {
+            while (dataBits < codeSize) {
+              if (pos >= data.length) return null;
+              dataVal |= data[pos++] << dataBits;
+              dataBits += 8;
             }
+            const code = dataVal & ((1 << codeSize) - 1);
+            dataVal >>= codeSize;
+            dataBits -= codeSize;
+            return code;
           }
-          if (count === 0) {
-            return { empty: true };
+
+          let code;
+          let prev = null;
+          let outPos = 0;
+
+          while ((code = readCode()) !== null) {
+            if (code === clearCode) { resetDictionary(); codeSize = minCodeSize + 1; prev = null; continue; }
+            if (code === eoiCode) break;
+
+            let entry;
+            if (dictionary[code]) { entry = dictionary[code].slice(); }
+            else if (code === dictLength && prev) { entry = prev.concat(prev[0]); }
+            else { break; }
+
+            for (let i = 0; i < entry.length && outPos < pixelCount; i++) output[outPos++] = entry[i];
+
+            if (prev && dictLength < 4096) dictionary[dictLength++] = prev.concat(entry[0]);
+            prev = entry;
+
+            if (dictLength === (1 << codeSize) && codeSize < 12) codeSize++;
           }
-          const normalized = Math.max(0, Math.min(1, total / (count * 255)));
-          const cutoff = 0.35;
-          const brightness = (normalized - cutoff) / (1 - cutoff);
-          if (brightness <= 0) {
-            return { empty: true };
-          }
-          const rampValue = Math.pow(Math.min(1, brightness), 0.65);
-          const rampIndex = Math.min(asciiRamp.length - 1, Math.floor(rampValue * asciiRamp.length));
-          const char = asciiRamp[rampIndex];
-          const factor = 1 / count;
-          const baseR = Math.round(r * factor);
-          const baseG = Math.round(g * factor);
-          const baseB = Math.round(b * factor);
-          const mix = 0.35 + rampValue * 0.65;
-          const tint = (channel) => Math.round(channel * mix + 255 * (1 - mix));
-          const color = `rgb(${tint(baseR)}, ${tint(baseG)}, ${tint(baseB)})`;
-          return { empty: false, char, color };
+
+          return output.slice(0, outPos);
         }
 
-        function createAsciiFrames(decodedFrames, fullWidth, fullHeight, backgroundColor) {
-          const targetCells = 60000;
-          const rawSample = Math.sqrt((fullWidth * fullHeight) / targetCells);
-          const sampleSize = Math.max(1, Math.min(4, Math.round(rawSample) || 1));
-          const cols = Math.ceil(fullWidth / sampleSize);
-          const rows = Math.ceil(fullHeight / sampleSize);
-          const background = new Uint8ClampedArray(fullWidth * fullHeight * 4);
-          const current = new Uint8ClampedArray(fullWidth * fullHeight * 4);
-          const scratch = new Uint8ClampedArray(fullWidth * fullHeight * 4);
-          const frames = [];
-          if (backgroundColor && backgroundColor.length === 4) {
-            for (let i = 0; i < fullWidth * fullHeight; i++) {
+        function deinterlace(pixels, width) {
+          const height = Math.floor(pixels.length / width);
+          const newPixels = new Array(pixels.length);
+          const passes = [
+            { start: 0, step: 8 },
+            { start: 4, step: 8 },
+            { start: 2, step: 4 },
+            { start: 1, step: 2 }
+          ];
+          let pos = 0;
+          passes.forEach(pass => {
+            for (let y = pass.start; y < height; y += pass.step) {
+              const offset = y * width;
+              for (let x = 0; x < width; x++) { if (pos < pixels.length) newPixels[offset + x] = pixels[pos++]; }
+            }
+          });
+          return newPixels;
+        }
+
+        const header = stream.readString(6);
+        if (header !== 'GIF87a' && header !== 'GIF89a') throw new Error('Invalid GIF signature');
+
+        const width = stream.readUnsigned();
+        const height = stream.readUnsigned();
+        const packed = stream.readByte();
+        const gctFlag = (packed & 0x80) !== 0;
+        const gctSize = 1 << ((packed & 0x07) + 1);
+        const backgroundColorIndex = stream.readByte();
+        stream.readByte();
+
+        let globalColorTable = null;
+        if (gctFlag) globalColorTable = readColorTable(gctSize);
+
+        const frames = [];
+        let gce = { delay: 10, transparencyIndex: null, disposalType: 0 };
+
+        while (stream.pos < stream.data.length) {
+          const blockId = stream.readByte();
+          if (blockId === 0x3B) {
+            break;
+          } else if (blockId === 0x21) {
+            const label = stream.readByte();
+            if (label === 0xF9) {
+              const blockSize = stream.readByte();
+              const gPacked = stream.readByte();
+              const delay = stream.readUnsigned();
+              const transpIndex = stream.readByte();
+              stream.readByte();
+              gce = {
+                disposalType: (gPacked >> 2) & 0x07,
+                transparencyIndex: (gPacked & 0x01) ? transpIndex : null,
+                delay: delay === 0 ? 10 : delay,
+              };
+              if (blockSize !== 4) stream.pos += blockSize - 4;
+            } else if (label === 0xFF) {
+              const blockSize = stream.readByte();
+              stream.pos += blockSize;
+              skipSubBlocks();
+            } else {
+              skipSubBlocks();
+            }
+          } else if (blockId === 0x2C) {
+            const left = stream.readUnsigned();
+            const top = stream.readUnsigned();
+            const frameWidth = stream.readUnsigned();
+            const frameHeight = stream.readUnsigned();
+            const iPacked = stream.readByte();
+            const lctFlag = (iPacked & 0x80) !== 0;
+            const interlaced = (iPacked & 0x40) !== 0;
+            const lctSize = 1 << ((iPacked & 0x07) + 1);
+
+            let colorTable = globalColorTable;
+            if (lctFlag) colorTable = readColorTable(lctSize);
+
+            const lzwMinCodeSize = stream.readByte();
+            const imageData = readSubBlocks();
+            const pixelCount = frameWidth * frameHeight;
+            let pixelIndices = lzwDecode(lzwMinCodeSize, imageData, pixelCount);
+            if (interlaced) pixelIndices = deinterlace(pixelIndices, frameWidth);
+
+            const patch = new Uint8ClampedArray(frameWidth * frameHeight * 4);
+            const transIndex = gce.transparencyIndex;
+            for (let i = 0; i < frameWidth * frameHeight; i++) {
+              const colorIndex = pixelIndices[i];
               const offset = i * 4;
-              background[offset] = backgroundColor[0];
-              background[offset + 1] = backgroundColor[1];
-              background[offset + 2] = backgroundColor[2];
-              background[offset + 3] = backgroundColor[3];
-            }
-            current.set(background);
-          }
-
-          decodedFrames.forEach((frame, index) => {
-            scratch.set(current);
-            const { width, height, top, left } = frame.dims;
-            const patch = frame.patch;
-
-            for (let y = 0; y < height; y++) {
-              for (let x = 0; x < width; x++) {
-                const srcIdx = (y * width + x) * 4;
-                const destIdx = ((y + top) * fullWidth + (x + left)) * 4;
-                scratch[destIdx] = patch[srcIdx];
-                scratch[destIdx + 1] = patch[srcIdx + 1];
-                scratch[destIdx + 2] = patch[srcIdx + 2];
-                scratch[destIdx + 3] = patch[srcIdx + 3];
+              if (colorIndex === transIndex) {
+                patch[offset] = 0;
+                patch[offset + 1] = 0;
+                patch[offset + 2] = 0;
+                patch[offset + 3] = 0;
+              } else {
+                const color = colorTable[colorIndex] || [0, 0, 0, 0];
+                patch[offset] = color[0];
+                patch[offset + 1] = color[1];
+                patch[offset + 2] = color[2];
+                patch[offset + 3] = color[3];
               }
-            }
-
-            const lines = [];
-            for (let row = 0; row < rows; row++) {
-              const lineParts = [];
-              const y = row * sampleSize;
-              for (let col = 0; col < cols; col++) {
-                const x = col * sampleSize;
-                const cell = averageBlock(scratch, fullWidth, fullHeight, x, y, sampleSize);
-                if (cell.empty) {
-                  lineParts.push('<span class="px empty"></span>');
-                } else {
-                  const safeChar = cell.char === ' ' ? '&nbsp;' : cell.char;
-                  lineParts.push(`<span class="px" style="color:${cell.color}">${safeChar}</span>`);
-                }
-              }
-              lines.push(lineParts.join(''));
             }
 
             frames.push({
-              html: lines.join('\n'),
-              delay: Math.max(40, (frame.delay || 10) * 10),
-              data: scratch.slice(0),
-              disposalType: frame.disposalType || 0,
-              dims: frame.dims,
+              dims: { left, top, width: frameWidth, height: frameHeight },
+              delay: gce.delay,
+              disposalType: gce.disposalType,
+              patch,
             });
 
-            current.set(scratch);
-
-            if (frame.disposalType === 2) {
-              const { width: fw, height: fh, top: ft, left: fl } = frame.dims;
-              for (let y = 0; y < fh; y++) {
-                for (let x = 0; x < fw; x++) {
-                  const idx = ((y + ft) * fullWidth + (x + fl)) * 4;
-                  current[idx] = background[idx];
-                  current[idx + 1] = background[idx + 1];
-                  current[idx + 2] = background[idx + 2];
-                  current[idx + 3] = background[idx + 3];
-                }
-              }
-            } else if (frame.disposalType === 3 && frames[index - 1]) {
-              current.set(frames[index - 1].data);
-            }
-          });
-
-          frames.forEach((frame) => {
-            delete frame.data;
-          });
-
-          return { frames, sampleSize, cols, rows };
-        }
-
-        const base64Source = window.__CLOUD_GIF_BASE64__;
-        if (!base64Source) {
-          console.error('Missing cloud GIF base64 data.');
-          return;
-        }
-
-        function parseGIF(arrayBuffer) {
-          const bytes = new Uint8Array(arrayBuffer);
-          const stream = {
-            data: bytes,
-            pos: 0,
-            readByte() { return this.data[this.pos++]; },
-            readBytes(count) {
-              const slice = this.data.subarray(this.pos, this.pos + count);
-              this.pos += count;
-              return slice;
-            },
-            readUnsigned() {
-              const value = this.data[this.pos] | (this.data[this.pos + 1] << 8);
-              this.pos += 2;
-              return value;
-            },
-            readString(length) {
-              let out = '';
-              for (let i = 0; i < length; i++) {
-                out += String.fromCharCode(this.readByte());
-              }
-              return out;
-            },
-          };
-
-          function readColorTable(size) {
-            const table = new Array(size);
-            for (let i = 0; i < size; i++) {
-              const r = stream.readByte();
-              const g = stream.readByte();
-              const b = stream.readByte();
-              table[i] = [r, g, b, 255];
-            }
-            return table;
-          }
-
-          function skipSubBlocks() {
-            let size = stream.readByte();
-            while (size !== 0) {
-              stream.pos += size;
-              size = stream.readByte();
-            }
-          }
-
-          function readSubBlocks() {
-            const chunks = [];
-            let length = 0;
-            let size = stream.readByte();
-            while (size !== 0) {
-              const chunk = stream.readBytes(size);
-              chunks.push(chunk);
-              length += chunk.length;
-              size = stream.readByte();
-            }
-            const data = new Uint8Array(length);
-            let offset = 0;
-            chunks.forEach((chunk) => {
-              data.set(chunk, offset);
-              offset += chunk.length;
-            });
-            return data;
-          }
-
-          function lzwDecode(minCodeSize, data, pixelCount) {
-            let pos = 0;
-            const clearCode = 1 << minCodeSize;
-            const eoiCode = clearCode + 1;
-            let codeSize = minCodeSize + 1;
-            let dictionary = [];
-            let dictLength = 0;
-            const output = new Array(pixelCount);
-
-            function resetDictionary() {
-              dictionary = new Array(4096);
-              const size = 1 << minCodeSize;
-              for (let i = 0; i < size; i++) {
-                dictionary[i] = [i];
-              }
-              dictionary[clearCode] = [];
-              dictionary[eoiCode] = null;
-              dictLength = eoiCode + 1;
-            }
-
-            resetDictionary();
-
-            let dataVal = 0;
-            let dataBits = 0;
-
-            function readCode() {
-              while (dataBits < codeSize) {
-                if (pos >= data.length) return null;
-                dataVal |= data[pos++] << dataBits;
-                dataBits += 8;
-              }
-              const code = dataVal & ((1 << codeSize) - 1);
-              dataVal >>= codeSize;
-              dataBits -= codeSize;
-              return code;
-            }
-
-            let code;
-            let prev = null;
-            let outPos = 0;
-
-            while ((code = readCode()) !== null) {
-              if (code === clearCode) {
-                resetDictionary();
-                codeSize = minCodeSize + 1;
-                prev = null;
-                continue;
-              }
-              if (code === eoiCode) break;
-
-              let entry;
-              if (dictionary[code]) {
-                entry = dictionary[code].slice();
-              } else if (code === dictLength && prev) {
-                entry = prev.concat(prev[0]);
-              } else {
-                break;
-              }
-
-              for (let i = 0; i < entry.length && outPos < pixelCount; i++) {
-                output[outPos++] = entry[i];
-              }
-
-              if (prev && dictLength < 4096) {
-                dictionary[dictLength++] = prev.concat(entry[0]);
-              }
-              prev = entry;
-
-              if (dictLength === (1 << codeSize) && codeSize < 12) {
-                codeSize++;
-              }
-            }
-
-            return output.slice(0, outPos);
-          }
-
-          function deinterlace(pixels, width) {
-            const height = Math.floor(pixels.length / width);
-            const newPixels = new Array(pixels.length);
-            const passes = [
-              { start: 0, step: 8 },
-              { start: 4, step: 8 },
-              { start: 2, step: 4 },
-              { start: 1, step: 2 },
-            ];
-            let pos = 0;
-            passes.forEach((pass) => {
-              for (let y = pass.start; y < height; y += pass.step) {
-                const offset = y * width;
-                for (let x = 0; x < width; x++) {
-                  if (pos < pixels.length) {
-                    newPixels[offset + x] = pixels[pos++];
-                  }
-                }
-              }
-            });
-            return newPixels;
-          }
-
-          const header = stream.readString(6);
-          if (header !== 'GIF87a' && header !== 'GIF89a') {
-            throw new Error('Invalid GIF signature');
-          }
-
-          const width = stream.readUnsigned();
-          const height = stream.readUnsigned();
-          const packed = stream.readByte();
-          const gctFlag = (packed & 0x80) !== 0;
-          const gctSize = 1 << ((packed & 0x07) + 1);
-          const backgroundColorIndex = stream.readByte();
-          stream.readByte(); // pixel aspect ratio, unused
-
-          let globalColorTable = null;
-          if (gctFlag) {
-            globalColorTable = readColorTable(gctSize);
-          }
-
-          const frames = [];
-          let gce = { delay: 10, transparencyIndex: null, disposalType: 0 };
-
-          while (stream.pos < stream.data.length) {
-            const blockId = stream.readByte();
-            if (blockId === 0x3B) {
-              break; // trailer
-            } else if (blockId === 0x21) { // extension
-              const label = stream.readByte();
-              if (label === 0xF9) { // graphic control
-                const blockSize = stream.readByte(); // should be 4
-                const gPacked = stream.readByte();
-                const delay = stream.readUnsigned();
-                const transpIndex = stream.readByte();
-                stream.readByte(); // terminator
-                gce = {
-                  disposalType: (gPacked >> 2) & 0x07,
-                  transparencyIndex: (gPacked & 0x01) ? transpIndex : null,
-                  delay: delay === 0 ? 10 : delay,
-                };
-                if (blockSize !== 4) {
-                  stream.pos += blockSize - 4;
-                }
-              } else if (label === 0xFF) { // application extension
-                const blockSize = stream.readByte();
-                stream.pos += blockSize;
-                skipSubBlocks();
-              } else {
-                // comment, plain text, or other extensions
-                skipSubBlocks();
-              }
-            } else if (blockId === 0x2C) { // image descriptor
-              const left = stream.readUnsigned();
-              const top = stream.readUnsigned();
-              const frameWidth = stream.readUnsigned();
-              const frameHeight = stream.readUnsigned();
-              const iPacked = stream.readByte();
-              const lctFlag = (iPacked & 0x80) !== 0;
-              const interlaced = (iPacked & 0x40) !== 0;
-              const lctSize = 1 << ((iPacked & 0x07) + 1);
-
-              let colorTable = globalColorTable;
-              if (lctFlag) {
-                colorTable = readColorTable(lctSize);
-              }
-              const lzwMinCodeSize = stream.readByte();
-              const imageData = readSubBlocks();
-              const pixelCount = frameWidth * frameHeight;
-              let pixelIndices = lzwDecode(lzwMinCodeSize, imageData, pixelCount);
-              if (pixelIndices.length < pixelCount) {
-                const filled = new Array(pixelCount);
-                for (let i = 0; i < pixelCount; i++) {
-                  filled[i] = pixelIndices[i] !== undefined ? pixelIndices[i] : 0;
-                }
-                pixelIndices = filled;
-              }
-              if (interlaced) {
-                pixelIndices = deinterlace(pixelIndices, frameWidth);
-              }
-
-              const patch = new Uint8ClampedArray(pixelCount * 4);
-              const transIndex = gce.transparencyIndex;
-              for (let i = 0; i < pixelCount; i++) {
-                const colorIndex = pixelIndices[i];
-                const offset = i * 4;
-                if (colorIndex === transIndex) {
-                  patch[offset] = 0;
-                  patch[offset + 1] = 0;
-                  patch[offset + 2] = 0;
-                  patch[offset + 3] = 0;
-                } else {
-                  const color = colorTable[colorIndex] || [0, 0, 0, 0];
-                  patch[offset] = color[0];
-                  patch[offset + 1] = color[1];
-                  patch[offset + 2] = color[2];
-                  patch[offset + 3] = color[3];
-                }
-              }
-
-              frames.push({
-                dims: { left, top, width: frameWidth, height: frameHeight },
-                delay: (gce.delay || 10) * 10,
-                disposalType: gce.disposalType || 0,
-                patch,
-              });
-
-              gce = { delay: 10, transparencyIndex: null, disposalType: 0 };
-            } else {
-              break;
-            }
-          }
-
-          const backgroundColor = globalColorTable && globalColorTable[backgroundColorIndex]
-            ? globalColorTable[backgroundColorIndex].slice()
-            : [0, 0, 0, 0];
-
-          return {
-            lsd: { width, height, backgroundColorIndex, backgroundColor },
-            frames,
-          };
-        }
-
-        const arrayBuffer = base64ToArrayBuffer(base64Source);
-        const gif = parseGIF(arrayBuffer);
-        const speedFactor = 0.15;
-        const { frames: asciiFrames, cols, rows } = createAsciiFrames(gif.frames, gif.lsd.width, gif.lsd.height, gif.lsd.backgroundColor);
-        if (!asciiFrames.length) {
-          console.warn('No frames decoded from GIF.');
-          return;
-        }
-
-        const asciiWrapper = document.createElement('div');
-        asciiWrapper.className = 'cloud-wrap';
-        const asciiStage = document.createElement('div');
-        asciiStage.className = 'cloud-stage';
-        asciiWrapper.appendChild(asciiStage);
-
-        const hiddenProbe = document.createElement('pre');
-        hiddenProbe.className = 'cloud cloud-probe';
-        asciiStage.appendChild(hiddenProbe);
-
-        const displayNode = document.createElement('pre');
-        displayNode.className = 'cloud cloud-display';
-        asciiStage.appendChild(displayNode);
-
-        root.appendChild(asciiWrapper);
-
-        const baseFontPx = 12;
-        let scheduled = null;
-
-        function applyScale() {
-          hiddenProbe.style.fontSize = `${baseFontPx}px`;
-          hiddenProbe.style.lineHeight = '1';
-          hiddenProbe.style.letterSpacing = '0';
-
-          const wrapRect = asciiWrapper.getBoundingClientRect();
-          const probeWidth = hiddenProbe.offsetWidth;
-          const probeHeight = hiddenProbe.offsetHeight;
-          if (!wrapRect.width || !wrapRect.height || !probeWidth || !probeHeight) return;
-
-          const scale = Math.min(
-            wrapRect.width / probeWidth,
-            wrapRect.height / probeHeight
-          );
-
-          displayNode.style.fontSize = `${baseFontPx}px`;
-          displayNode.style.lineHeight = '1';
-          displayNode.style.letterSpacing = '0';
-          displayNode.style.transformOrigin = 'center center';
-          displayNode.style.transform = `scale(${scale})`;
-        }
-
-        function scheduleScale() {
-          if (scheduled !== null) return;
-          scheduled = requestAnimationFrame(() => {
-            scheduled = null;
-            applyScale();
-          });
-        }
-
-        let currentIndex = 0;
-        let nextFrameAt = performance.now();
-
-        function showFrame(index) {
-          const html = asciiFrames[index].html;
-          hiddenProbe.innerHTML = html;
-          displayNode.innerHTML = html;
-          scheduleScale();
-        }
-
-        function animationLoop(time) {
-          requestAnimationFrame(animationLoop);
-          if (document.hidden) return;
-          if (prefersReduced.matches) {
-            if (currentIndex !== 0) {
-              currentIndex = 0;
-              showFrame(currentIndex);
-            }
-            return;
-          }
-          if (time >= nextFrameAt) {
-            showFrame(currentIndex);
-            const frame = asciiFrames[currentIndex];
-            nextFrameAt = time + frame.delay * speedFactor;
-            currentIndex = (currentIndex + 1) % asciiFrames.length;
-          }
-        }
-
-        showFrame(0);
-        currentIndex = asciiFrames.length > 1 ? 1 : 0;
-        nextFrameAt = performance.now() + asciiFrames[0].delay * speedFactor;
-        window.addEventListener('resize', scheduleScale);
-        window.addEventListener('orientationchange', scheduleScale);
-        prefersReduced.addEventListener('change', () => {
-          if (prefersReduced.matches) {
-            currentIndex = 0;
-            showFrame(0);
+            gce = { delay: 10, transparencyIndex: null, disposalType: 0 };
           } else {
-            nextFrameAt = performance.now();
-            scheduleScale();
+            break;
+          }
+        }
+
+        const backgroundColor = globalColorTable && globalColorTable[backgroundColorIndex]
+          ? globalColorTable[backgroundColorIndex].slice()
+          : [0, 0, 0, 0];
+
+        return {
+          lsd: { width, height, backgroundColor },
+          frames,
+        };
+      }
+
+      function buildFrameSequence(frames, width, height, backgroundColor) {
+        const total = width * height * 4;
+        const background = new Uint8ClampedArray(total);
+        if (backgroundColor) {
+          for (let i = 0; i < total; i += 4) {
+            background[i] = backgroundColor[0];
+            background[i + 1] = backgroundColor[1];
+            background[i + 2] = backgroundColor[2];
+            background[i + 3] = backgroundColor[3];
+          }
+        }
+
+        const current = new Uint8ClampedArray(background);
+        const sequence = [];
+
+        frames.forEach((frame, index) => {
+          const working = current.slice();
+          const { left, top, width: fw, height: fh } = frame.dims;
+          const patch = frame.patch;
+
+          for (let y = 0; y < fh; y++) {
+            for (let x = 0; x < fw; x++) {
+              const srcIdx = (y * fw + x) * 4;
+              const destIdx = ((top + y) * width + (left + x)) * 4;
+              const alpha = patch[srcIdx + 3];
+              if (alpha === 0) continue;
+              working[destIdx] = patch[srcIdx];
+              working[destIdx + 1] = patch[srcIdx + 1];
+              working[destIdx + 2] = patch[srcIdx + 2];
+              working[destIdx + 3] = alpha;
+            }
+          }
+
+          const delay = Math.max(40, (frame.delay || 10) * 10);
+          sequence.push({ pixels: working.slice(0), delay, disposalType: frame.disposalType, dims: frame.dims });
+
+          current.set(working);
+
+          if (frame.disposalType === 2) {
+            const { left, top, width: fw2, height: fh2 } = frame.dims;
+            for (let y = 0; y < fh2; y++) {
+              for (let x = 0; x < fw2; x++) {
+                const idx = ((top + y) * width + (left + x)) * 4;
+                current[idx] = background[idx];
+                current[idx + 1] = background[idx + 1];
+                current[idx + 2] = background[idx + 2];
+                current[idx + 3] = background[idx + 3];
+              }
+            }
+          } else if (frame.disposalType === 3 && sequence[index - 1]) {
+            current.set(sequence[index - 1].pixels);
           }
         });
-        scheduleScale();
-        requestAnimationFrame(animationLoop);
 
-        try { delete window.__CLOUD_GIF_BASE64__; } catch (err) { /* ignore */ }
-      })();
+        return sequence;
+      }
+
+      const arrayBuffer = base64ToArrayBuffer(base64);
+      const gif = parseGIF(arrayBuffer);
+      const frames = buildFrameSequence(gif.frames, gif.lsd.width, gif.lsd.height, gif.lsd.backgroundColor);
+
+      const frameCanvas = document.createElement('canvas');
+      frameCanvas.width = gif.lsd.width;
+      frameCanvas.height = gif.lsd.height;
+      const frameCtx = frameCanvas.getContext('2d');
+      const frameImage = frameCtx.createImageData(gif.lsd.width, gif.lsd.height);
+      const texture = new THREE.CanvasTexture(frameCanvas);
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = false;
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      const effect = new AsciiEffect(renderer, asciiCharacters, { invert: true, resolution: 0.20 });
+      effect.domElement.style.position = 'absolute';
+      effect.domElement.style.left = '0';
+      effect.domElement.style.top = '0';
+      effect.domElement.style.width = '100%';
+      effect.domElement.style.height = '100%';
+      effect.domElement.style.color = '#e9f3ff';
+      effect.domElement.style.backgroundColor = 'transparent';
+      effect.domElement.style.mixBlendMode = 'screen';
+      effect.domElement.style.pointerEvents = 'none';
+
+      wrapper.innerHTML = '';
+      wrapper.style.position = 'relative';
+      wrapper.appendChild(effect.domElement);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
+
+      const plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(2, 2),
+        new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, depthTest: false })
+      );
+      scene.add(plane);
+
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+      camera.position.set(0, 0, 2);
+      camera.lookAt(0, 0, 0);
+
+      function applySize() {
+        const rect = wrapper.getBoundingClientRect();
+        const width = rect.width || window.innerWidth;
+        const height = rect.height || window.innerHeight;
+        renderer.setSize(width, height);
+        effect.setSize(width, height);
+
+        const displayAspect = width / height;
+        const gifAspect = gif.lsd.width / gif.lsd.height;
+        if (gifAspect > displayAspect) {
+          plane.scale.set(gifAspect / displayAspect, 1, 1);
+        } else {
+          plane.scale.set(1, displayAspect / gifAspect, 1);
+        }
+      }
+
+      const resizeObserver = new ResizeObserver(applySize);
+      resizeObserver.observe(wrapper);
+      window.addEventListener('resize', applySize);
+      applySize();
+
+      let frameIndex = 0;
+      let nextFrameAt = performance.now();
+
+      function drawFrame(index) {
+        const frame = frames[index];
+        frameImage.data.set(frame.pixels);
+        frameCtx.putImageData(frameImage, 0, 0);
+        texture.needsUpdate = true;
+      }
+
+      function render(time) {
+        if (frames.length) {
+          if (time >= nextFrameAt) {
+            drawFrame(frameIndex);
+            nextFrameAt = time + frames[frameIndex].delay;
+            frameIndex = (frameIndex + 1) % frames.length;
+          }
+        }
+
+        effect.render(scene, camera);
+        if (!prefersReduced.matches) {
+          requestAnimationFrame(render);
+        }
+      }
+
+      if (prefersReduced.matches) {
+        drawFrame(0);
+        effect.render(scene, camera);
+      } else {
+        requestAnimationFrame(render);
+      }
+
+      try { delete window.__CLOUD_GIF_BASE64__; } catch (err) {}
     </script>
   </body>
 </html>
