@@ -98,7 +98,7 @@
         color: rgba(244, 247, 255, 0.92);
         text-shadow: 0 0 9px rgba(160, 205, 255, 0.2);
         mix-blend-mode: screen;
-        filter: saturate(1.12) contrast(1.32) brightness(1.05);
+        filter: saturate(1.12) contrast(2.32) brightness(1.05);
         max-width: 100vw;
         max-height: 100vh;
         transform: translateZ(0);
@@ -353,7 +353,7 @@
             return { empty: true };
           }
           const normalized = Math.max(0, Math.min(1, total / (count * 255)));
-          const cutoff = 0.45;
+          const cutoff = 0.35;
           const brightness = (normalized - cutoff) / (1 - cutoff);
           if (brightness <= 0) {
             return { empty: true };
@@ -748,7 +748,7 @@
 
         const arrayBuffer = base64ToArrayBuffer(base64Source);
         const gif = parseGIF(arrayBuffer);
-        const speedFactor = 0.95;
+        const speedFactor = 0.15;
         const { frames: asciiFrames, cols, rows } = createAsciiFrames(gif.frames, gif.lsd.width, gif.lsd.height, gif.lsd.backgroundColor);
         if (!asciiFrames.length) {
           console.warn('No frames decoded from GIF.');
